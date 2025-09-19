@@ -1,5 +1,5 @@
 const fs = require("fs");
-const http = require("http");
+const https = require("https");
 const express = require("express");
 const bodyParser = require("body-parser");
 const WebSocket = require("ws");
@@ -11,7 +11,7 @@ const TelegramBot = require("node-telegram-bot-api");
 // -------------------
 // Config
 // -------------------
-const PORT = 8080; // แนะนำ 8080 สำหรับ HTTP
+const PORT_HTTPS = 8443;
 const JWT_SECRET = "SuperServerSecretKey123";
 
 // ESP32 keys (รวมทุกบอร์ด)
@@ -76,11 +76,10 @@ let chatId;
 // -------------------
 // HTTPS server
 // -------------------
-// const server = https.createServer({
-//   key: fs.readFileSync("key.pem"),
-//   cert: fs.readFileSync("cert.pem"),
-// });
-const server = http.createServer(app); // <-- ต้องสร้างหลัง app
+const server = https.createServer({
+  key: fs.readFileSync("key.pem"),
+  cert: fs.readFileSync("cert.pem"),
+});
 
 // -------------------
 // Express API
@@ -242,15 +241,7 @@ app.get("/api/sensor", (req, res) => {
 
 //=============================
 server.on("request", app);
-// server.listen(PORT_HTTPS, () => {
-//   console.log(`Secure server running at https://localhost:${PORT_HTTPS}`);
-//   console.log(`WebSocket wss://localhost:${PORT_HTTPS}`);
-// });
-
-// =============================
-// Start HTTP server
-// =============================
-server.listen(PORT, () => {
-  console.log(`HTTP server running at http://localhost:${PORT}`);
-  console.log(`WebSocket ws://localhost:${PORT}`);
+server.listen(PORT_HTTPS, () => {
+  console.log(`Secure server running at https://localhost:${PORT_HTTPS}`);
+  console.log(`WebSocket wss://localhost:${PORT_HTTPS}`);
 });
