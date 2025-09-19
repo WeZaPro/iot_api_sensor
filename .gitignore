@@ -3,6 +3,5 @@ package-lock.json
 .env
 save
 Backup
-cert.pem
-key.pem
+
 server copy.js
