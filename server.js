@@ -80,14 +80,13 @@ let chatId;
 //   key: fs.readFileSync("key.pem"),
 //   cert: fs.readFileSync("cert.pem"),
 // });
-const server = http.createServer(app); // <-- ต้องสร้างหลัง app
 
 // -------------------
 // Express API
 // -------------------
 const app = express();
 app.use(bodyParser.json());
-
+const server = http.createServer(app); // <-- ต้องสร้างหลัง app
 // POST /login → ESP32 request JWT
 app.post("/login", (req, res) => {
   const { clientId, signature, timestamp } = req.body;
