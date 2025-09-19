@@ -1,39 +1,32 @@
+// ==============================
+// Import modules
+// ==============================
 const fs = require("fs");
 const http = require("http");
 const express = require("express");
-const bodyParser = require("body-parser");
+const bodyParser = require("body-parser"); // หรือใช้ express.json() ก็ได้
 const WebSocket = require("ws");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const mysql = require("mysql2/promise");
 const TelegramBot = require("node-telegram-bot-api");
 
-// -------------------
+// ==============================
 // Config
-// -------------------
-const PORT = 8080; // แนะนำ 8080 สำหรับ HTTP
+// ==============================
+const PORT = 8080; // HTTP port
 const JWT_SECRET = "SuperServerSecretKey123";
 
-// ESP32 keys (รวมทุกบอร์ด)
+// ESP32 secret keys
 const ESP32_KEYS = {
   esp32_1: "ESP32_1_SECRET",
   esp32_2: "ESP32_2_SECRET",
-  esp32_dest_1: "ESP32_DEST_1_SECRET", // เพิ่มปลายทาง
+  esp32_dest_1: "ESP32_DEST_1_SECRET", // ปลายทาง
 };
 
-// -------------------
+// ==============================
 // MySQL connection
-// -------------------
-// const pool = mysql.createPool({
-//   host: "localhost",
-//   user: "root",
-//   password: "",
-//   database: "iot_system",
-//   waitForConnections: true,
-//   connectionLimit: 10,
-//   queueLimit: 0,
-// });
-
+// ==============================
 const pool = mysql.createPool({
   host: "localhost",
   user: "topon_Sensor",
@@ -44,9 +37,9 @@ const pool = mysql.createPool({
   queueLimit: 0,
 });
 
-// -------------------
-// Function ดึง bot config
-// -------------------
+// ==============================
+// Function ดึง bot config จาก DB
+// ==============================
 async function getBotConfig(botName) {
   const [rows] = await pool.query(
     "SELECT botToken, chatId FROM IOT WHERE botName = ?",
@@ -56,15 +49,15 @@ async function getBotConfig(botName) {
   return { botToken: rows[0].botToken, chatId: rows[0].chatId };
 }
 
-// -------------------
+// ==============================
 // Init Telegram bot
-// -------------------
+// ==============================
 let bot;
 let chatId;
 
 (async () => {
   try {
-    const config = await getBotConfig("MySensorBot"); // เปลี่ยนชื่อ botName ตาม DB
+    const config = await getBotConfig("MySensorBot"); // ชื่อ bot ใน DB
     bot = new TelegramBot(config.botToken, { polling: true });
     chatId = config.chatId;
     console.log("Telegram bot initialized:", config);
@@ -73,21 +66,20 @@ let chatId;
   }
 })();
 
-// -------------------
-// HTTPS server
-// -------------------
-// const server = https.createServer({
-//   key: fs.readFileSync("key.pem"),
-//   cert: fs.readFileSync("cert.pem"),
-// });
-
-// -------------------
-// Express API
-// -------------------
+// ==============================
+// Express app
+// ==============================
 const app = express();
-app.use(bodyParser.json());
-const server = http.createServer(app); // <-- ต้องสร้างหลัง app
+app.use(bodyParser.json()); // หรือ app.use(express.json());
+
+// ==============================
+// HTTP Server
+// ==============================
+const server = http.createServer(app);
+
+// ==============================
 // POST /login → ESP32 request JWT
+// ==============================
 app.post("/login", (req, res) => {
   const { clientId, signature, timestamp } = req.body;
 
@@ -112,9 +104,9 @@ app.post("/login", (req, res) => {
   res.json({ ok: true, token });
 });
 
-// -------------------
+// ==============================
 // WebSocket server
-// -------------------
+// ==============================
 const clients = {};
 const wss = new WebSocket.Server({ server });
 
@@ -144,9 +136,7 @@ wss.on("connection", (ws) => {
         return;
       }
 
-      // -------------------
-      // Sensor phase
-      // -------------------
+      // ---------- Sensor phase ----------
       const { sensor, timestamp, signature, boardId, targetId } = data;
       const secretKey = ESP32_KEYS[ws.clientId];
       const payloadStr = sensor + timestamp;
@@ -169,7 +159,7 @@ wss.on("connection", (ws) => {
         )}V | Timestamp: ${timestamp} | Target: ${targetId}`
       );
 
-      // ส่ง Telegram ถ้ามี bot พร้อม
+      // ส่ง Telegram ถ้ามี bot
       if (volt > 0 && bot) {
         const text = `📟 Sensor Alert\nBoard: ${boardId}\nADC: ${raw}\nVolt: ${volt.toFixed(
           3
@@ -200,10 +190,10 @@ wss.on("connection", (ws) => {
     }
   });
 });
-// api
-// -------------------
-// Default GET APIs
-// -------------------
+
+// ==============================
+// API Endpoints
+// ==============================
 
 // เช็คสถานะเซิร์ฟเวอร์
 app.get("/status", (req, res) => {
@@ -215,17 +205,17 @@ app.get("/status", (req, res) => {
   });
 });
 
-// ตัวอย่าง API คืนค่าข้อมูล default sensor config
+// Default sensor config
 app.get("/api/default", (req, res) => {
   res.json({
     ok: true,
-    defaultVoltThreshold: 1.0, // ค่าตัวอย่าง
+    defaultVoltThreshold: 1.0,
     defaultBoardId: "esp32_1",
     message: "This is default API response",
   });
 });
 
-// ตัวอย่าง GET API รับค่า boardId เป็น query
+// GET sensor data ตัวอย่าง
 app.get("/api/sensor", (req, res) => {
   const { boardId } = req.query;
   if (!boardId) {
@@ -234,21 +224,14 @@ app.get("/api/sensor", (req, res) => {
   res.json({
     ok: true,
     boardId,
-    lastVolt: Math.random() * 3.3, // แค่ตัวอย่าง
+    lastVolt: Math.random() * 3.3, // ตัวอย่าง
     timestamp: new Date().toISOString(),
   });
 });
 
-//=============================
-server.on("request", app);
-// server.listen(PORT_HTTPS, () => {
-//   console.log(`Secure server running at https://localhost:${PORT_HTTPS}`);
-//   console.log(`WebSocket wss://localhost:${PORT_HTTPS}`);
-// });
-
-// =============================
+// ==============================
 // Start HTTP server
-// =============================
+// ==============================
 server.listen(PORT, () => {
   console.log(`HTTP server running at http://localhost:${PORT}`);
   console.log(`WebSocket ws://localhost:${PORT}`);
