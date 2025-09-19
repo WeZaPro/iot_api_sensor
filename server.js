@@ -200,6 +200,44 @@ wss.on("connection", (ws) => {
     }
   });
 });
+// api
+// -------------------
+// Default GET APIs
+// -------------------
+
+// เช็คสถานะเซิร์ฟเวอร์
+app.get("/status", (req, res) => {
+  res.json({
+    ok: true,
+    msg: "Server is running",
+    activeWSClients: Object.keys(clients).length,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// ตัวอย่าง API คืนค่าข้อมูล default sensor config
+app.get("/api/default", (req, res) => {
+  res.json({
+    ok: true,
+    defaultVoltThreshold: 1.0, // ค่าตัวอย่าง
+    defaultBoardId: "esp32_1",
+    message: "This is default API response",
+  });
+});
+
+// ตัวอย่าง GET API รับค่า boardId เป็น query
+app.get("/api/sensor", (req, res) => {
+  const { boardId } = req.query;
+  if (!boardId) {
+    return res.status(400).json({ ok: false, msg: "Missing boardId" });
+  }
+  res.json({
+    ok: true,
+    boardId,
+    lastVolt: Math.random() * 3.3, // แค่ตัวอย่าง
+    timestamp: new Date().toISOString(),
+  });
+});
 
 //=============================
 server.on("request", app);
