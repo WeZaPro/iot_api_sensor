@@ -24,11 +24,21 @@ const ESP32_KEYS = {
 // -------------------
 // MySQL connection
 // -------------------
+// const pool = mysql.createPool({
+//   host: "localhost",
+//   user: "root",
+//   password: "",
+//   database: "iot_system",
+//   waitForConnections: true,
+//   connectionLimit: 10,
+//   queueLimit: 0,
+// });
+
 const pool = mysql.createPool({
   host: "localhost",
-  user: "root",
-  password: "",
-  database: "iot_system",
+  user: "topon_Sensor",
+  password: "Taweesak5050",
+  database: "sensor_topon_",
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
